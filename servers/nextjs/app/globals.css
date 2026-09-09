@@ -1019,15 +1019,15 @@ thead {
 }
 
 .pai-fall {
-  animation: pai-fall 0.9s var(--pai-ease) both;
+  animation: pai-fall 0.9s var(--pai-ease) backwards;
 }
 
 .pai-fall-soft {
-  animation: pai-fall-soft 0.7s var(--pai-ease) both;
+  animation: pai-fall-soft 0.7s var(--pai-ease) backwards;
 }
 
 .pai-page {
-  animation: pai-fall-soft 0.6s var(--pai-ease) both;
+  animation: pai-fall-soft 0.6s var(--pai-ease) backwards;
 }
 
 .pai-delay-1 { animation-delay: 0.08s; }
@@ -1054,13 +1054,14 @@ thead {
 
 .pai-reveal.is-in {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
-  filter: blur(0);
+  transform: none;
+  filter: none;
+  will-change: auto;
 }
 
 .pai-drop-line {
   transform-origin: top center;
-  animation: pai-drop-line 1.2s var(--pai-ease) both;
+  animation: pai-drop-line 1.2s var(--pai-ease) backwards;
 }
 
 /* Slow drifting light for hero backgrounds */

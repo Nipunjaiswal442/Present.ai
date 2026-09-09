@@ -46,6 +46,9 @@ function ConfigurationLoadingScreen() {
   );
 }
 
+/** Onboarding (provider setup) lives at /start; the marketing landing page owns /. */
+const ONBOARDING_ROUTE = "/start";
+
 export function ConfigurationInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
 
@@ -71,7 +74,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
   useEffect(() => {
     if (
-      route === '/' ||
+      route === ONBOARDING_ROUTE ||
       isSettingsRoute ||
       route.startsWith('/pdf-maker')
     ) {
@@ -101,7 +104,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
               "Choose and configure a text provider before opening other pages.",
               { id: "provider-setup-required" }
             );
-            router.replace('/');
+            router.replace(ONBOARDING_ROUTE);
           }
           return;
         }
@@ -125,7 +128,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
             "Presenton Cloud is disconnected. Choose a text provider to continue.",
             { id: "provider-setup-required" }
           );
-          router.replace('/');
+          router.replace(ONBOARDING_ROUTE);
         }
       } catch (error) {
         console.error('Failed to revalidate provider configuration:', error);
@@ -296,26 +299,26 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
             return;
           }
           if (!isAvailable) {
-            router.push('/');
-            setLoadingToFalseAfterNavigatingTo('/');
+            router.push(ONBOARDING_ROUTE);
+            setLoadingToFalseAfterNavigatingTo(ONBOARDING_ROUTE);
             return;
           }
         }
-        if (route === '/') {
+        if (route === ONBOARDING_ROUTE) {
           router.push('/upload');
           setLoadingToFalseAfterNavigatingTo('/upload');
         } else {
           setIsLoading(false);
         }
       } else if (
-        route !== '/' &&
+        route !== ONBOARDING_ROUTE &&
         !(
           isSettingsRoute &&
           (llmConfig.LLM === 'codex' || llmConfig.LLM === 'presenton')
         )
       ) {
-        router.push('/');
-        setLoadingToFalseAfterNavigatingTo('/');
+        router.push(ONBOARDING_ROUTE);
+        setLoadingToFalseAfterNavigatingTo(ONBOARDING_ROUTE);
       } else {
         setIsLoading(false);
       }
@@ -348,7 +351,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
         setIsLoading(false);
         return;
       }
-      if (route === '/') {
+      if (route === ONBOARDING_ROUTE) {
         router.push('/upload');
         setLoadingToFalseAfterNavigatingTo('/upload');
       } else {

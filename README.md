@@ -84,9 +84,11 @@ Set `PRESENTON_HTTP_HOST_PORT=8080` before the command to use a different port.
 The Next.js interface (landing page + app UI) deploys to Vercel as-is. The FastAPI backend (LLM calls, document parsing, PPTX export, database) needs a long-running server, so host it with Docker on any VPS, Railway, Render, Fly.io or similar and point the Vercel deployment at it.
 
 1. Click **Deploy** below (or import the repo in Vercel).
-2. Set **Root Directory** to `servers/nextjs` (the button pre-fills this).
-3. Add the environment variable `NEXT_PUBLIC_FAST_API` = the public URL of your backend, for example `https://api.example.com`.
+2. Set **Root Directory** to `servers/nextjs` (the button pre-fills this). This step is required: with the root directory left at `/`, Vercel finds `servers/fastapi/pyproject.toml`, tries to build the Python backend, and fails with `No interpreter found for Python 3.11`.
+3. Add the environment variable `NEXT_PUBLIC_FAST_API` = the public URL of your backend, for example `https://present-ai-i9ze.onrender.com` for a Render deployment of this repo.
 4. Deploy. The landing page works immediately; the app pages talk to your backend.
+
+> Already running the Docker image on Render, Railway or a VPS? That deployment serves the landing page **and** the app by itself. Vercel is optional and only puts the interface on Vercel's CDN.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNipunjaiswal442%2FPresent.ai&root-directory=servers%2Fnextjs&project-name=present-ai&repository-name=present-ai&env=NEXT_PUBLIC_FAST_API&envDescription=URL%20of%20your%20hosted%20Present.ai%20backend)
 
