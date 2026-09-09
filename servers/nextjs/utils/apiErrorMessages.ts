@@ -139,5 +139,15 @@ export function extractApiErrorMessage(
     message = normalizeApiErrorDetail(errorData);
   }
 
+  if (message && looksLikeHtmlDocument(message)) {
+    const title = /<title>([^<]*)<\/title>/i.exec(message)?.[1]?.trim() || "unknown";
+    message = `The server answered with an HTML page instead of an API response (title: ${title.slice(0, 80)}). A firewall or proxy blocked the request. Please try again, or check the hosting provider's firewall settings.`;
+  }
+
   return sanitizeApiErrorMessage(message || fallbackMessage, fallbackMessage, status);
+}
+
+function looksLikeHtmlDocument(text: string): boolean {
+  const head = text.trimStart().slice(0, 200).toLowerCase();
+  return head.startsWith("<!doctype html") || head.startsWith("<html");
 }

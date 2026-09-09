@@ -31,6 +31,29 @@ class ModelAvailabilityError(Exception):
         )
 
 
+_HTML_BLOCK_MESSAGE = (
+    "The request was answered with an HTML page instead of an API response "
+    "(title: {title}). A firewall or proxy between this server and the provider "
+    "blocked it. Check the provider URL, or try another provider or host."
+)
+
+
+def _looks_like_html(text: str) -> bool:
+    head = text.lstrip()[:200].lower()
+    return head.startswith("<!doctype html") or head.startswith("<html")
+
+
+def humanize_html_error(text: str) -> str:
+    """Replace a full HTML error page with a short, readable message."""
+    if not isinstance(text, str) or not _looks_like_html(text):
+        return text
+    import re
+
+    match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
+    title = (match.group(1).strip() if match else "unknown")[:80]
+    return _HTML_BLOCK_MESSAGE.format(title=title)
+
+
 def _payload_error_message(payload: Any) -> str | None:
     if isinstance(payload, dict):
         error = payload.get("error")
@@ -60,7 +83,7 @@ async def _aiohttp_error_message(response: aiohttp.ClientResponse) -> str:
             if message:
                 return message
         except json.JSONDecodeError:
-            return text
+            return humanize_html_error(text)
 
     return response.reason or f"Provider returned HTTP {response.status}"
 
@@ -83,7 +106,7 @@ def _openai_error_message(error: OpenAIAPIError) -> str:
     if message:
         return message
 
-    return getattr(error, "message", None) or str(error)
+    return humanize_html_error(getattr(error, "message", None) or str(error))
 
 
 def _google_error_message(error: GoogleAPIError) -> str:

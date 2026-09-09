@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "echo skip",
+  "buildCommand": "echo '' && echo '✖ Present.ai: set this Vercel project'\"'\"'s Root Directory to servers/nextjs (Settings → General → Root Directory) and redeploy.' && echo '  The Next.js interface lives in servers/nextjs; the repository root has nothing to deploy.' && echo '' && exit 1"
+}

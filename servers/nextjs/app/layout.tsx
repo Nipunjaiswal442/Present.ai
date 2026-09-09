@@ -7,6 +7,7 @@ import { Providers } from "./providers";
 import MixpanelInitializer from "./MixpanelInitializer";
 import { Toaster } from "@/components/ui/sonner";
 import TailwindBrowserRuntime from "@/components/runtime/TailwindBrowserRuntime";
+import JsonBodyGuard from "@/components/runtime/JsonBodyGuard";
 const inter = localFont({
   src: [
     {
@@ -87,6 +88,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${syne.variable} ${manrope.variable} ${unbounded.variable} antialiased`}
       >
+        <JsonBodyGuard />
         <Providers>
           <MixpanelInitializer>
 
