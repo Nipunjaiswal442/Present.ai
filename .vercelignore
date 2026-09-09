@@ -1,14 +1,15 @@
 # Vercel hosts only the Next.js interface (Root Directory: servers/nextjs).
-# The FastAPI backend and desktop app are never built on Vercel.
-servers/fastapi
-electron
-docs
-readme_assets
-templates
-scripts
-.github
-Dockerfile
-Dockerfile.dev
-docker-compose.yml
-nginx.conf
-start.js
+# Patterns are anchored to the repository root so nothing inside servers/nextjs is removed.
+/servers/fastapi
+/electron
+/docs
+/readme_assets
+/templates
+/scripts
+/.github
+/Dockerfile
+/Dockerfile.dev
+/docker-compose.yml
+/nginx.conf
+/start.js
+/layouts.json

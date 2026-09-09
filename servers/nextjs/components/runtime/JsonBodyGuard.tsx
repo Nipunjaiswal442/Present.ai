@@ -43,23 +43,67 @@ export function installJsonBodyGuard(): void {
 
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    let request: Promise<Response>;
     try {
       const body = init?.body;
-      if (typeof body === "string") {
-        const requestContentType =
-          input instanceof Request ? input.headers.get("content-type") : null;
-        if (isJsonContentType(init?.headers, requestContentType)) {
-          const escaped = escapeJsonSlashes(body);
-          if (escaped !== body) {
-            return originalFetch(input, { ...init, body: escaped });
-          }
-        }
+      const requestContentType =
+        input instanceof Request ? input.headers.get("content-type") : null;
+      if (typeof body === "string" && isJsonContentType(init?.headers, requestContentType)) {
+        const escaped = escapeJsonSlashes(body);
+        request = originalFetch(input, escaped !== body ? { ...init, body: escaped } : init);
+      } else {
+        request = originalFetch(input, init);
       }
     } catch {
-      // Fall through to the untouched request.
+      request = originalFetch(input, init);
     }
-    return originalFetch(input, init);
+    return request.then((response) => {
+      void redirectIfSessionLost(input, response);
+      return response;
+    });
   };
+}
+
+const LOGIN_ROUTE = "/start";
+
+function requestPath(input: RequestInfo | URL): string {
+  try {
+    const raw = input instanceof Request ? input.url : String(input);
+    return new URL(raw, window.location.origin).pathname;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * When the backend restarts with a fresh database (ephemeral hosting) or the
+ * session expires, API calls start answering 428 "setup required" or 401.
+ * Instead of leaving the user on a dead page, send them to the login screen.
+ */
+async function redirectIfSessionLost(input: RequestInfo | URL, response: Response): Promise<void> {
+  if (response.status !== 401 && response.status !== 428) return;
+  const path = requestPath(input);
+  if (!path.startsWith("/api/") || path.startsWith("/api/v1/auth/")) return;
+  if (window.location.pathname === LOGIN_ROUTE || window.location.pathname === "/") return;
+
+  let detail = "";
+  let setupRequired = false;
+  try {
+    const payload = (await response.clone().json()) as { detail?: unknown; setup_required?: unknown };
+    detail = typeof payload?.detail === "string" ? payload.detail : "";
+    setupRequired = payload?.setup_required === true;
+  } catch {
+    return;
+  }
+
+  if (response.status === 428 && !setupRequired) return;
+  if (response.status === 401 && detail !== "Unauthorized") return;
+
+  const w = window as unknown as Record<string, unknown>;
+  if (w.__presentAiRedirecting) return;
+  w.__presentAiRedirecting = true;
+  const reason = setupRequired ? "setup" : "unauthorized";
+  window.location.assign(`${LOGIN_ROUTE}?reason=${reason}`);
 }
 
 installJsonBodyGuard();

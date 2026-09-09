@@ -86,6 +86,14 @@ export default function AuthGate() {
       return;
     }
     const params = new URLSearchParams(window.location.search);
+    if (params.get("reason") === "setup") {
+      notify.warning(
+        "Set up your login again",
+        "The server restarted with an empty database, so the admin account and settings were reset. On Render, add a persistent disk at /app_data or set AUTH_USERNAME and AUTH_PASSWORD to keep them.",
+        { id: "auth-setup-reset", duration: 12000 }
+      );
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     if (params.get("reason") === "unauthorized") {
       if (status.configured && !status.authenticated) {
         trackEvent(MixpanelEvent.Auth_Unauthorized_Redirect, {
