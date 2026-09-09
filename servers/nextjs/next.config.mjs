@@ -6,7 +6,9 @@ const isElectronBuild = process.env.PRESENTON_ELECTRON_BUILD === "true";
 
 const nextConfig = {
   reactStrictMode: false,
-  distDir: ".next-build",
+  // Docker, Electron and start.js expect .next-build; Vercel's Next.js builder
+  // only reads the default .next directory.
+  distDir: process.env.VERCEL ? ".next" : ".next-build",
   output: "standalone",
   turbopack: {
     root: nextjsRoot,
