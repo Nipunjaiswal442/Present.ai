@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Reveal from "./Reveal";
 import Wordmark from "./Wordmark";
+import { InstallAppButton } from "@/components/pwa/PwaProvider";
 
 const GITHUB_URL = "https://github.com/Nipunjaiswal442/Present.ai";
 const VERCEL_URL =
@@ -156,9 +157,12 @@ export default function Landing() {
               </a>
             </li>
           </ul>
-          <Link href="/start" className="pai-btn pai-btn-black h-10 px-4 text-[13.5px]">
+          <div className="flex items-center gap-1">
+          <InstallAppButton className="px-2" />
+          <Link href="/start" className="pai-btn pai-btn-black h-10 px-3 text-[13px]">
             Open app
           </Link>
+          </div>
         </nav>
       </header>
 

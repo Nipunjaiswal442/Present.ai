@@ -52,17 +52,33 @@ OPTIONAL_ADVANCED_FIELDS = {
 def sanitize_provider_settings(config: dict[str, Any]) -> dict[str, Any]:
     """Keep provider/runtime settings and exclude every legacy auth field."""
     return {
-        key: value
+        key: value.strip() if isinstance(value, str) else value
         for key, value in config.items()
         if not key.upper().startswith("AUTH_")
     }
+
+
+async def get_effective_provider_settings(session: AsyncSession) -> dict[str, Any]:
+    """Resolve settings on the backend, including env-only deployments."""
+    from utils.get_env import get_can_change_keys_env
+    from utils.user_config import get_user_config
+
+    saved = await get_provider_settings(session)
+    mutable = get_can_change_keys_env() != "false"
+    effective = get_user_config(saved if mutable else {}).model_dump(exclude_none=True)
+    if mutable:
+        effective.update(saved)
+    return sanitize_provider_settings(effective)
 
 
 def merge_provider_settings(
     existing: dict[str, Any], incoming: dict[str, Any]
 ) -> dict[str, Any]:
     """Preserve the previous settings API's patch and managed-token behavior."""
-    sanitized = sanitize_provider_settings(incoming)
+    sanitized = {
+        key: value for key, value in sanitize_provider_settings(incoming).items()
+        if value != "__configured__"
+    }
     merged = {**sanitize_provider_settings(existing), **sanitized}
 
     for key in OAUTH_MANAGED_FIELDS:

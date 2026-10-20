@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { ArrowLeft } from "lucide-react";
 import Wordmark from "@/components/pai/Wordmark";
+import { InstallAppButton } from "@/components/pwa/PwaProvider";
 
 const PATHS_WITH_HEADER_BACK = [
   "/upload",
@@ -44,6 +45,7 @@ const Header = () => {
           <Wordmark href="/dashboard" />
         </div>
         <div className="flex items-center">
+          <InstallAppButton />
           {showHeaderBack ? (
             <Link
               href={backHref}

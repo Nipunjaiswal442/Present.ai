@@ -1,4 +1,5 @@
 export interface LLMConfig {
+  PRESENTON_CONNECTED?: boolean;
   LLM?: string;
 
   // OpenAI

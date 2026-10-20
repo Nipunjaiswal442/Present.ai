@@ -10,6 +10,7 @@ from utils.icon_weights import (
 )
 from utils.path_helpers import get_resource_path, get_writable_path
 
+ICON_INITIALIZATION_TIMEOUT_SECONDS = 20
 
 def _icon_fastembed_cache_directory() -> str:
     """ONNX weights for icon search (MiniLM). Prefer a path outside ``APP_DATA_DIRECTORY``
@@ -30,6 +31,7 @@ class IconFinderService:
         self.vectorstore = None
         self._initialized = False
         self._initialization_failed = False
+        self._initialization_task: asyncio.Task[bool] | None = None
 
     def _initialize_icons_collection(self):
         if self._initialized or self._initialization_failed:
@@ -163,7 +165,22 @@ class IconFinderService:
         )
 
     async def search_icons(self, query: str, k: int = 1, weight: str | None = None):
-        if not self.ensure_initialized():
+        # Loading ONNX weights may download files on first use. Doing this on
+        # the event loop freezes every request, including login and SSE pings.
+        # Share one initialization task and let slides use placeholder icons
+        # if it takes too long; later requests can use the completed model.
+        if self._initialization_task is None:
+            self._initialization_task = asyncio.create_task(
+                asyncio.to_thread(self.ensure_initialized)
+            )
+        try:
+            ready = await asyncio.wait_for(
+                asyncio.shield(self._initialization_task),
+                timeout=ICON_INITIALIZATION_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            return []
+        if not ready:
             # Return empty list if vectorstore failed to initialize
             return []
             

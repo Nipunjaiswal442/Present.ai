@@ -194,13 +194,16 @@ from utils.set_env import (
 )
 
 
-def get_user_config():
+def get_user_config(overrides: dict | None = None):
     user_config_path = get_user_config_path_env()
 
     existing_config = UserConfig()
     existing_config_data = {}
     try:
-        if user_config_path:
+        if overrides is not None:
+            existing_config_data = overrides
+            existing_config = UserConfig(**existing_config_data)
+        elif user_config_path:
             existing_config_data = read_user_config_file(user_config_path)
             existing_config = UserConfig(**existing_config_data)
     except Exception:
@@ -375,12 +378,15 @@ def get_user_config():
     )
 
 
-def update_env_with_user_config():
+def update_env_with_user_config(overrides: dict | None = None):
     user_config_path = get_user_config_path_env()
-    if user_config_path:
-        persisted = read_user_config_file(user_config_path)
-        if not persisted.get("LLM"):
-            os.environ.pop("LLM", None)
+    if overrides is not None or user_config_path:
+        persisted = overrides if overrides is not None else read_user_config_file(user_config_path)
+        # Explicitly cleared settings must not fall back to their previous
+        # process value. An empty first-run file must preserve deployment env.
+        for key, value in persisted.items():
+            if key in UserConfig.model_fields and value in (None, ""):
+                os.environ.pop(key, None)
         for key in (
             "LLM_GENERATION_PROFILE",
             "LLM_MAX_OUTPUT_TOKENS",
@@ -395,9 +401,9 @@ def update_env_with_user_config():
             "OPENROUTER_DATA_COLLECTION",
             "OPENROUTER_ZDR",
         ):
-            if key not in persisted:
+            if persisted and key not in persisted:
                 os.environ.pop(key, None)
-    user_config = get_user_config()
+    user_config = get_user_config(overrides)
     if user_config.LLM:
         set_llm_provider_env(user_config.LLM)
     if user_config.OPENAI_API_KEY:

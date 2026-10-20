@@ -423,9 +423,9 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
   };
 
   return (
-    <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
+    <div className="space-y-6 bg-[#F9F8F8] p-3 sm:p-7 rounded-[12px] ">
       {/* API Key Input */}
-      <div className="mb-4 flex flex-col gap-8 rounded-[12px] bg-white pt-5 pb-10 px-10 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+      <div className="mb-4 flex flex-col gap-8 rounded-[12px] bg-white pt-5 pb-10 px-4 sm:px-10 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
         <div className="max-w-[290px] shrink-0 ">
           <div
             className="w-[60px] h-[60px] rounded-[4px] flex items-center justify-center"
@@ -476,7 +476,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
           >
             <div
               className={`relative shrink-0 ${
-                selectedProvider === "codex" ? "w-[240px]" : "w-[262px]"
+                selectedProvider === "codex" ? "w-[240px]" : "w-full max-w-[262px]"
               }`}
             >
               <div className="flex flex-col justify-start ">
@@ -492,7 +492,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                       variant="outline"
                       role="combobox"
                       aria-expanded={openProviderSelect}
-                      className="w-[222px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900 transition-colors hover:border-gray-400 justify-between"
+                      className="w-full max-w-[222px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900 transition-colors hover:border-gray-400 justify-between"
                     >
                       <div className="flex gap-3 items-center">
                         {selectedProviderMeta?.icon ? (
@@ -580,7 +580,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                 selectedProvider === "presenton"
                   ? "w-[440px] max-w-full shrink-0 items-stretch"
                   : selectedProvider === "codex"
-                  ? "items-end w-[262px]  max-w-full shrink-0"
+                  ? "items-end w-full max-w-[262px]  max-w-full shrink-0"
                   : "items-end w-[282px]  shrink-0 max-w-full"
               }`}
             >
@@ -845,9 +845,8 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
           {!isManualModelProvider &&
           selectedProvider !== "presenton" &&
           selectedProvider !== "codex" &&
-          selectedProvider !== "ollama" &&
-          modelsChecked ? (
-            <div className="w-[262px]">
+          selectedProvider !== "ollama" ? (
+            <div className="w-full max-w-[262px]">
               <CreatableModelInput
                 value={currentModel}
                 options={modelOptions.map((model) => model.value)}
@@ -889,7 +888,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="w-[222px]">
+                    <div className="w-full max-w-[222px]">
                         <div className="flex items-center  mb-4 gap-2.5 ">
                             <Switch
                                 checked={!!llmConfig.WEB_GROUNDING}

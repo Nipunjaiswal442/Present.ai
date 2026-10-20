@@ -1,4 +1,5 @@
 from typing import Optional
+import re
 
 from llmai import get_client
 from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
@@ -76,6 +77,9 @@ You're a professional presentation designer with creative freedom to design enga
 - Processes/workflows → Visual process layouts  
 - Comparisons/contrasts → Side-by-side layouts
 - Data/metrics → Chart/graph layouts
+- Only choose charts when the slide supplies actual numerical observations.
+- Never invent numbers to fill a chart. Qualitative ideas and action lists need
+  text, cards, or process layouts, even when a chart would add visual variety.
 - Concepts/ideas → Image + text layouts
 - Key insights → Emphasis layouts
 
@@ -206,6 +210,37 @@ async def generate_presentation_structure(
             validate_schema=True,
             disconnect_checker=disconnect_checker,
         )
-        return PresentationStructureModel(**content)
+        structure = PresentationStructureModel(**content)
+        return avoid_unsupported_chart_layouts(structure, presentation_outline, presentation_layout)
     except Exception as e:
         raise handle_llm_client_exceptions(e)
+
+
+def avoid_unsupported_chart_layouts(
+    structure: PresentationStructureModel,
+    outline: PresentationOutlineModel,
+    layout: PresentationLayoutModel,
+) -> PresentationStructureModel:
+    """A chart schema must not force a model to invent data for qualitative slides."""
+    def has_chart_schema(value) -> bool:
+        if isinstance(value, dict):
+            properties = value.get("properties", {})
+            if isinstance(properties, dict) and "chart_type" in properties:
+                return True
+            return any(has_chart_schema(child) for child in value.values())
+        return isinstance(value, list) and any(has_chart_schema(child) for child in value)
+
+    chart_indexes = {i for i, slide in enumerate(layout.slides) if has_chart_schema(slide.json_schema)}
+    alternatives = [i for i in range(len(layout.slides)) if i not in chart_indexes]
+    if not alternatives:
+        return structure
+    repaired = list(structure.slides)
+    for index, choice in enumerate(repaired):
+        if choice not in chart_indexes or index >= len(outline.slides):
+            continue
+        # Ordered-list markers and slide numbers are not chart observations.
+        text = re.sub(r"(?mi)^\s*(?:#{1,6}\s*)?slide\s+\d+\b[.):]?\s*", "", outline.slides[index].content)
+        text = re.sub(r"(?m)^\s*\d+[.)]\s+", "", text)
+        if not re.search(r"\d", text):
+            repaired[index] = alternatives[index % len(alternatives)]
+    return PresentationStructureModel(slides=repaired)

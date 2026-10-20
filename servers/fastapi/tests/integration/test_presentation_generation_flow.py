@@ -1,6 +1,8 @@
 import asyncio
+import json
 import uuid
 from datetime import datetime
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -807,6 +809,29 @@ def test_prepare_presentation_accepts_template_layout_id():
     assert structure_layout.slides[0].id == "template-layout-1"
 
 
+def test_prepare_presentation_fallback_does_not_add_chart_without_data():
+    source = json.loads((Path(__file__).resolve().parents[4] / "templates/modern/template.json").read_text())
+    presentation_id = uuid.uuid4()
+    presentation = PresentationModel(
+        id=presentation_id, version=PresentationVersion.V2_STANDARD,
+        content="Greener blocks", n_slides=1, language="English",
+        include_table_of_contents=False,
+    )
+    template = TemplateV2(id="modern", name="Modern", layouts={"layouts": source["layouts"]})
+    session = FakeAsyncSession(get_results={presentation_id: presentation, "modern": template})
+    chart_index = next(i for i, item in enumerate(source["layouts"]) if item["id"] == "title_description_chart")
+    with patch.object(presentation_endpoint, "generate_presentation_structure", new=AsyncMock(return_value=PresentationStructureModel(slides=[999]))), \
+         patch.object(presentation_endpoint.random, "randrange", return_value=chart_index), \
+         patch.object(presentation_endpoint.MEM0_PRESENTATION_MEMORY_SERVICE, "store_generated_outlines", new=AsyncMock()):
+        _run(presentation_endpoint.prepare_presentation(
+            presentation_id=presentation_id,
+            outlines=[SlideOutlineModel(content="## Greener Blocks\n- Plant native trees\n- Compost food scraps")],
+            layout="modern", sql_session=session,
+        ))
+    selected = source["layouts"][presentation.structure["slides"][0]]
+    assert "chart" not in selected["id"]
+
+
 def test_prepare_presentation_normalizes_incomplete_and_invalid_layout_indexes():
     presentation_id = uuid.uuid4()
     template_id = "strategy-template"
@@ -916,7 +941,12 @@ def test_get_presentation_preserves_template_detail_payload():
         structure=structure,
         tone="default",
         verbosity="standard",
-        instructions=None,
+        instructions="Use concise headings",
+        file_paths=["/documents/source.pdf"],
+        outlines={"slides": [{"content": "# Saved heading\nEdited body"}]},
+        include_title_slide=False,
+        include_table_of_contents=True,
+        web_search=True,
         fonts={
             "Inter": "https://example.com/inter.css",
             "Brand Sans": "/app_data/fonts/brand-sans.ttf",
@@ -974,6 +1004,12 @@ def test_get_presentation_preserves_template_detail_payload():
     assert not hasattr(response, "layout")
     assert not hasattr(response, "structure")
     assert response.theme is presentation.theme
+    assert response.instructions == "Use concise headings"
+    assert response.file_paths == ["/documents/source.pdf"]
+    assert response.outlines == {"slides": [{"content": "# Saved heading\nEdited body"}]}
+    assert response.include_title_slide is False
+    assert response.include_table_of_contents is True
+    assert response.web_search is True
     assert not hasattr(response, "components")
     assert not hasattr(response, "merged_components")
     assert response.fonts == {

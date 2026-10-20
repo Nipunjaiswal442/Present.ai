@@ -102,6 +102,18 @@ Frontend environment variables (also listed in [`servers/nextjs/.env.example`](s
 
 To run the backend for a Vercel frontend, start the Docker image and expose port `80` (or the FastAPI port `8000`) behind HTTPS. Set `CORS`-friendly hosting: the interface calls the backend through Next.js rewrites, so the browser only ever talks to your Vercel domain.
 
+Provider settings are saved in the backend database. The frontend does not need a shared `userConfig.json` file or copies of your provider API keys. Keep the backend database and `APP_DATA_DIRECTORY` on persistent storage.
+
+PPTX/PDF exports run on the backend. Use the complete Docker deployment, which includes the Next.js slide renderer, Node.js, Chromium, and the export package. For a manual installation, run `npm run sync:presentation-export` at the repository root and set the backend's `NEXT_PUBLIC_URL` to the reachable Next.js renderer (for example, `http://127.0.0.1:3000` locally). A FastAPI-only server without the renderer and export dependencies cannot export decks. Reverse proxies must allow long generation/export requests and forward event streams without buffering; the bundled nginx configuration does this. External hosts may impose their own request-duration limits.
+
+## Use on iPhone
+
+Open the deployed HTTPS website in Safari, sign in, and tap **Install app** for instructions. Use **Share → Add to Home Screen**, leave **Open as Web App** enabled when shown, then tap **Add**. The Home Screen icon opens Present.ai as a standalone app. On supported desktop/Android browsers, **Install app** opens the browser's installation prompt.
+
+In **Settings → Text generation**, select a provider, paste its API key, choose a model (or enter the model ID manually), and save. Configure an image provider or turn off image generation. Then use **New**, describe your presentation, choose a template, review the outline, and generate the slides. **Export** downloads PowerPoint or PDF.
+
+Generation, editing, and export need a network connection to the server. The installed app shows an offline screen when disconnected; it does not cache private presentations or API keys. Installation requires a deployed HTTPS address or localhost, and should be checked on the actual iPhone after deployment.
+
 ## 🎛 Features
 
 - **Two generation modes.** *Standard* drafts an outline you review before slides are written. *Smart* streams a finished deck straight from the prompt, optionally using a community design as reference.

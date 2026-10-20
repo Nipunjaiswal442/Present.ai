@@ -1,22 +1,14 @@
 import { NextResponse } from "next/server";
-import { readUserConfigFile } from "@/lib/user-config-store";
+import { GET as getRuntimeConfig } from "../runtime-config/route";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const userConfigPath = process.env.USER_CONFIG_PATH;
-
-  let keyFromFile = "";
-  if (userConfigPath) {
-    try {
-      const cfg = readUserConfigFile<{ OPENAI_API_KEY?: string }>(userConfigPath);
-      keyFromFile = cfg?.OPENAI_API_KEY || "";
-    } catch {
-      keyFromFile = "";
-    }
-  }
-  const keyFromEnv = process.env.OPENAI_API_KEY || "";
-  const hasKey = Boolean((keyFromFile || keyFromEnv).trim());
-
-  return NextResponse.json({ hasKey });
+export async function GET(request: Request) {
+  const response = await getRuntimeConfig(request);
+  if (!response.ok) return response;
+  const runtime = await response.json();
+  return NextResponse.json(
+    { hasKey: Boolean(runtime.config?.OPENAI_API_KEY) },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

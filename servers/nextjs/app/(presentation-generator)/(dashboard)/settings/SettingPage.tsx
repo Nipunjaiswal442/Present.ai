@@ -25,6 +25,7 @@ import {
 import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import { getApiUrl } from "@/utils/api";
 import LogoutButton from "@/components/Auth/LogoutButton";
+import { InstallAppButton } from "@/components/pwa/PwaProvider";
 import AdminPanel from "../admin/AdminPanel";
 import {
   CHATGPT_AUTH_REQUIRED_EVENT,
@@ -415,19 +416,20 @@ const SettingsPage = () => {
 
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden font-syne">
-      <main className="mx-auto flex min-h-0 w-full flex-1 gap-6 overflow-hidden">
+    <div className="relative flex h-[calc(100dvh-5.5rem-env(safe-area-inset-bottom))] flex-col overflow-hidden font-syne md:h-dvh">
+      <main className="mx-auto flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden md:flex-row md:gap-6">
         <SettingSideBar
           selectedProvider={selectedProvider}
           setSelectedProvider={selectSettingsSection}
           presentonSelected={llmConfig.LLM === "presenton"}
         />
-        <div className="custom_scrollbar min-h-0 w-full flex-1 overflow-y-auto pb-36 pr-5">
+        <div className="custom_scrollbar min-h-0 min-w-0 w-full flex-1 overflow-y-auto px-4 pb-8 md:pl-0 md:pr-5">
           <div className="sticky right-0 top-0 z-40 mb-4 bg-white/90 py-[28px] backdrop-blur">
-            <div className="flex  gap-3 items-center ">
+            <div className="flex flex-wrap gap-3 items-center">
               <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-black flex items-center gap-2">
                 Settings
               </h3>
+              <InstallAppButton />
               <p className="text-[10px] px-2.5 py-0.5 rounded-[50px] text-[#111111] border border-[#EDEEEF]  font-medium ">
                 {textSummary} · {imageSummary} · {webSearchSummary}
               </p>
@@ -474,7 +476,7 @@ const SettingsPage = () => {
 
       {/* Fixed Bottom Button — hidden on Sign out; nothing to save there */}
       {!["session", "admin"].includes(selectedProvider) ? (
-        <div className="fixed bottom-20 right-5 z-50 mx-auto">
+        <div className="flex shrink-0 justify-end border-t border-black/5 bg-white/90 p-3 md:px-5">
           <button
             onClick={handleSaveConfig}
             disabled={buttonState.isDisabled}

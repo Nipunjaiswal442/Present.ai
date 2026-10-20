@@ -55,6 +55,7 @@ import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { v4 as uuidv4 } from "uuid";
 import StreamingGenerationMetrics from "./StreamingGenerationMetrics";
+import { requestPresentationExport } from "@/utils/presentationExport";
 
 const MAX_EXPORT_TITLE_LENGTH = 40;
 
@@ -250,24 +251,7 @@ const PresentationHeader = ({
       if (exportRuntime === "electron") {
         await exportViaIpc("pptx", safePptxTitle);
       } else {
-        const response = await fetch("/api/export-presentation", {
-          method: "POST",
-          body: JSON.stringify({
-            format: "pptx",
-            id: presentation_id,
-            title: safePptxTitle,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to export PPTX");
-        }
-
-        const { path: pptxPath } = await response.json();
-        if (!pptxPath) {
-          throw new Error("No path returned from export");
-        }
-
+        const pptxPath = await requestPresentationExport(presentation_id, "pptx");
         downloadLink(pptxPath, safePptxFileName);
       }
       await trackExportLifecycle(
@@ -279,7 +263,7 @@ const PresentationHeader = ({
       );
       notify.success(
         "Export complete",
-        "Your PPTX file has been downloaded.",
+        "Your PPTX is ready. Check your downloads.",
         { id: exportToastId }
       );
     } catch (error) {
@@ -294,7 +278,7 @@ const PresentationHeader = ({
       );
       notify.error(
         "Export failed",
-        "We are having trouble exporting your presentation. Please try again.",
+        error instanceof Error ? error.message : "Unable to export your presentation. Please try again.",
         exportToastId !== undefined ? { id: exportToastId } : undefined
       );
     } finally {
@@ -332,24 +316,8 @@ const PresentationHeader = ({
       if (exportRuntime === "electron") {
         await exportViaIpc("pdf", safePdfTitle);
       } else {
-        const response = await fetch("/api/export-presentation", {
-          method: "POST",
-          body: JSON.stringify({
-            format: "pdf",
-            id: presentation_id,
-            title: safePdfTitle,
-          }),
-        });
-
-        if (response.ok) {
-          const { path: pdfPath } = await response.json();
-          if (!pdfPath) {
-            throw new Error("No path returned from export");
-          }
-          downloadLink(pdfPath, safePdfFileName);
-        } else {
-          throw new Error("Failed to export PDF");
-        }
+        const pdfPath = await requestPresentationExport(presentation_id, "pdf");
+        downloadLink(pdfPath, safePdfFileName);
       }
       await trackExportLifecycle(
         MixpanelEvent.Presentation_Export_Completed,
@@ -360,7 +328,7 @@ const PresentationHeader = ({
       );
       notify.success(
         "Export complete",
-        "Your PDF file has been downloaded.",
+        "Your PDF is ready. Check your downloads.",
         { id: exportToastId }
       );
     } catch (error) {
@@ -375,7 +343,7 @@ const PresentationHeader = ({
       );
       notify.error(
         "Export failed",
-        "We are having trouble exporting your presentation. Please try again.",
+        error instanceof Error ? error.message : "Unable to export your presentation. Please try again.",
         exportToastId !== undefined ? { id: exportToastId } : undefined
       );
     } finally {
@@ -492,7 +460,7 @@ const PresentationHeader = ({
       )}
     >
       {isEditingTitle ? (
-        <div className="flex items-stretch w-[450px]  gap-0.5 rounded-[14px] border border-[#E4E2EB] bg-white pl-3.5 pr-1 py-1 shadow-[0_2px_12px_rgba(17,3,31,0.06)] ring-2 ring-[#111111]/15">
+        <div className="flex items-stretch w-full max-w-[450px]  gap-0.5 rounded-[14px] border border-[#E4E2EB] bg-white pl-3.5 pr-1 py-1 shadow-[0_2px_12px_rgba(17,3,31,0.06)] ring-2 ring-[#111111]/15">
           <input
             ref={titleInputRef}
             value={draftTitle}
@@ -549,7 +517,7 @@ const PresentationHeader = ({
             "disabled:pointer-events-none disabled:opacity-100 disabled:hover:bg-transparent"
           )}
         >
-          <h2 className="min-w-0 flex-1 font-unbounded text-lg w-[450px] leading-snug text-[#111111]">
+          <h2 className="min-w-0 flex-1 font-unbounded text-lg w-full max-w-[450px] leading-snug text-[#111111]">
             <MarkdownRenderer
               content={presentationData?.title || "Presentation"}
               className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-[#111111] prose-p:my-0 prose-headings:my-0"
@@ -568,16 +536,11 @@ const PresentationHeader = ({
 
   return (
     <>
-      <div className="py-[18px] px-4 sticky top-0 bg-white z-50 shadow-sm font-syne flex justify-between items-center gap-4">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <img
-            onClick={() => {
-              router.push("/dashboard");
-            }}
-            src="/logo-with-bg.png"
-            alt=""
-            className="w-10 h-10 cursor-pointer object-contain"
-          />
+      <div className="py-[18px] px-4 sticky top-0 bg-white z-50 shadow-sm font-syne flex flex-wrap justify-between items-center gap-3">
+        <div className="flex min-w-0 basis-full sm:basis-auto flex-1 items-center gap-3">
+          <button type="button" aria-label="Go to dashboard" onClick={() => router.push("/dashboard")} className="grid h-11 w-11 shrink-0 place-items-center">
+            <img src="/logo-with-bg.png" alt="" className="h-10 w-10 object-contain" />
+          </button>
           {presentationData && !isStreaming && !isEditingTitle ? (
             <ToolTip content="Rename presentation">{titleBlock}</ToolTip>
           ) : (
@@ -586,7 +549,7 @@ const PresentationHeader = ({
          
         </div>
 
-        <div className="flex shrink-0 items-center gap-2.5">
+        <div className="flex w-full flex-wrap shrink-0 items-center justify-end gap-2.5 sm:w-auto">
           {generationMode === "smart" && generationMetrics ? (
             <StreamingGenerationMetrics metrics={generationMetrics} />
           ) : null}
@@ -637,12 +600,13 @@ const PresentationHeader = ({
               </button>
             </ToolTip>
           )}
-          <div className="flex items-center gap-2 bg-[#F6F6F9] px-3.5 h-[38px] border border-[#EDECEC] rounded-[80px]">
+          <div className="flex items-center gap-1 bg-[#F6F6F9] px-1 min-h-11 border border-[#EDECEC] rounded-[80px]">
             <ToolTip content="Regenerate Presentation">
               <button
                 type="button"
+                aria-label="Regenerate presentation"
                 onClick={() => setIsRegenerateConfirmOpen(true)}
-                className="group"
+                className="group grid h-11 w-8 place-items-center sm:h-8"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-[#111111] group-hover:text-[#111111] duration-300" />
               </button>
@@ -650,8 +614,9 @@ const PresentationHeader = ({
             <Separator orientation="vertical" className="h-4" />
             <ToolTip content="Undo">
               <button
+                aria-label="Undo"
                 disabled={!canUndo}
-                className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+                className="grid h-11 w-8 place-items-center sm:h-8 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
                 onClick={() => {
                   onUndo();
                 }}
@@ -662,8 +627,9 @@ const PresentationHeader = ({
             <Separator orientation="vertical" className="h-4" />
             <ToolTip content="Redo">
               <button
+                aria-label="Redo"
                 disabled={!canRedo}
-                className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+                className="grid h-11 w-8 place-items-center sm:h-8 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
                 onClick={() => {
                   onRedo();
                 }}
@@ -674,6 +640,7 @@ const PresentationHeader = ({
             <Separator orientation="vertical" className="h-4 w-[2px]" />
             <ToolTip content="Present">
               <button
+                aria-label="Present slides"
                 onClick={() => {
                   const to = `?id=${presentation_id}&mode=present&slide=${
                     currentSlide || 0
@@ -693,7 +660,7 @@ const PresentationHeader = ({
                   !presentationData?.slides ||
                   presentationData?.slides.length === 0
                 }
-                className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="grid h-11 w-8 place-items-center sm:h-8 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
               >
                 <Play className="w-3.5 h-3.5 text-[#111111] group-hover:text-[#111111] duration-300" />
               </button>

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import suppress
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 
 from fastapi import HTTPException
@@ -14,9 +15,25 @@ async def safe_sse_stream(
     error_detail: str,
     on_error: Callable[[], Awaitable[None]] | None = None,
     error_metadata: Callable[[Exception], Awaitable[dict[str, object]]] | None = None,
+    heartbeat_seconds: float = 15,
 ) -> AsyncGenerator[str, None]:
+    iterator = stream.__aiter__()
+    pending: asyncio.Task | None = None
     try:
-        async for chunk in stream:
+        while True:
+            if pending is None:
+                pending = asyncio.create_task(anext(iterator))
+            done, _ = await asyncio.wait({pending}, timeout=heartbeat_seconds)
+            if not done:
+                # Long model calls can be silent for minutes. Keep reverse
+                # proxies alive without cancelling or restarting generation.
+                yield ": keep-alive\n\n"
+                continue
+            try:
+                chunk = pending.result()
+            except StopAsyncIteration:
+                break
+            pending = None
             yield chunk
     except asyncio.CancelledError:
         logger.info("SSE stream cancelled by client")
@@ -36,3 +53,13 @@ async def safe_sse_stream(
             except Exception:
                 logger.exception("SSE stream error metadata lookup failed")
         yield SSEErrorResponse(detail=str(detail), **metadata).to_string()
+    finally:
+        if pending is not None:
+            if not pending.done():
+                pending.cancel()
+            with suppress(asyncio.CancelledError, Exception):
+                await pending
+        close = getattr(iterator, "aclose", None)
+        if close:
+            with suppress(asyncio.CancelledError, Exception):
+                await close()

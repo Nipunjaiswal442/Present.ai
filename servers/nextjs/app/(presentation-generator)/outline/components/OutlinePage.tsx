@@ -32,6 +32,7 @@ import {
   VerbosityType,
 } from "../../upload/type";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
+import { DashboardApi } from "../../services/api/dashboard";
 import { useOutlineManagement } from "../hooks/useOutlineManagement";
 import { useOutlineStreaming } from "../hooks/useOutlineStreaming";
 import { usePresentationGeneration } from "../hooks/usePresentationGeneration";
@@ -134,11 +135,14 @@ const OutlinePage: React.FC = () => {
   const [isRegeneratingOutline, setIsRegeneratingOutline] = useState(false);
   const [hasOutlineStreamFinished, setHasOutlineStreamFinished] =
     useState(false);
+  const [restoredId, setRestoredId] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
 
   const hasSelectedTemplate = selectedTemplateId !== null;
   const streamState = useOutlineStreaming(
     presentation_id,
-    !isTemplateStage && hasSelectedTemplate
+    !isTemplateStage && hasSelectedTemplate && restoredId === presentation_id
   );
   const { handleDragEnd, handleAddSlide } = useOutlineManagement(outlines);
   const { loadingState, handleSubmit } = usePresentationGeneration(
@@ -159,10 +163,43 @@ const OutlinePage: React.FC = () => {
     (outlines.length > 0 || streamState.statusMessage === "Outline ready");
 
   useEffect(() => {
-    if (queryPresentationId && queryPresentationId !== storedPresentationId) {
-      dispatch(setPresentationId(queryPresentationId));
+    if (!presentation_id) return;
+    setRestoreError(null);
+    // Keep in-progress edits when returning from the template picker. A fresh
+    // page or a different deck must restore its own prompt and saved outline.
+    if (storedPresentationId === presentation_id && savedConfig) {
+      setRestoredId(presentation_id);
+      return;
     }
-  }, [dispatch, queryPresentationId, storedPresentationId]);
+    let cancelled = false;
+    void DashboardApi.getPresentation(presentation_id, { cache: "no-store" })
+      .then((presentation) => {
+        if (cancelled) return;
+        const config: PresentationConfig = {
+          ...DEFAULT_OUTLINE_CONFIG,
+          prompt: presentation.content || "",
+          slides: presentation.n_slides ? String(presentation.n_slides) : null,
+          language: presentation.language || LanguageType.Auto,
+          tone: presentation.tone || ToneType.Default,
+          verbosity: presentation.verbosity || VerbosityType.Standard,
+          instructions: presentation.instructions || "",
+          includeTableOfContents: !!presentation.include_table_of_contents,
+          includeTitleSlide: !!presentation.include_title_slide,
+          webSearch: !!presentation.web_search,
+        };
+        dispatch(setOutlines(getOutlinesFromResponse(presentation.outlines)));
+        dispatch(setPptGenUploadState({
+          config,
+          files: (presentation.file_paths || []).map((file_path: string) => ({ file_path })),
+        }));
+        dispatch(setPresentationId(presentation_id));
+        setRestoredId(presentation_id);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setRestoreError(error instanceof Error ? error.message : "Unable to load this outline.");
+      });
+    return () => { cancelled = true; };
+  }, [dispatch, presentation_id, storedPresentationId, savedConfig, restoreAttempt]);
 
   useEffect(() => {
     if (savedConfig) {
@@ -281,7 +318,11 @@ const OutlinePage: React.FC = () => {
 
       dispatch(setPptGenUploadState({ config: draftConfig, files }));
       dispatch(clearOutlines());
-      dispatch(setPresentationId(createResponse.id));
+      // The URL is authoritative when reopening an outline. Update it along
+      // with the new deck so regeneration cannot switch back to the old ID.
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("id", createResponse.id);
+      router.replace(`/outline?${nextParams.toString()}`);
       trackEvent(MixpanelEvent.TemplateV2_Outline_Regeneration_Completed, {
         old_presentation_id: presentation_id,
         new_presentation_id: createResponse.id,
@@ -317,6 +358,8 @@ const OutlinePage: React.FC = () => {
     outlineControlsBusy,
     presentation_id,
     selectedTemplateId,
+    router,
+    searchParams,
   ]);
 
   const handleUpdateOutline = (index: number, newContent: string) => {
@@ -366,6 +409,20 @@ const OutlinePage: React.FC = () => {
         <EmptyStateView />
       </div>
     );
+  }
+
+  if (restoreError) {
+    return <main className="flex min-h-dvh items-center justify-center p-6">
+      <div role="alert" className="glass max-w-md rounded-3xl p-7 text-center">
+        <h1 className="text-xl font-semibold">Unable to open your outline</h1>
+        <p className="my-5 text-sm">{restoreError}</p>
+        <button className="pai-btn pai-btn-black" onClick={() => setRestoreAttempt(value => value + 1)}>Try again</button>
+      </div>
+    </main>;
+  }
+
+  if (restoredId !== presentation_id) {
+    return <main role="status" className="grid min-h-dvh place-items-center">Loading your outline…</main>;
   }
 
   return (

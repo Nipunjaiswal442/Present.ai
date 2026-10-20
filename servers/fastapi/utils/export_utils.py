@@ -1,7 +1,8 @@
 import os
 import logging
 from typing import Literal
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
+from pathlib import Path
 import uuid
 
 from pathvalidate import sanitize_filename
@@ -10,9 +11,25 @@ from models.presentation_and_path import PresentationAndPath
 from utils.filename_utils import safe_export_basename
 from services.export_task_service import EXPORT_TASK_SERVICE
 from utils.runtime_limits import log_memory
+from utils.get_env import get_app_data_directory_env
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def export_download_url(file_path: str) -> str | None:
+    """Map an export to its authenticated URL, regardless of the data mount name."""
+    app_data = get_app_data_directory_env()
+    if not app_data:
+        return None
+    root = Path(app_data).resolve()
+    try:
+        resolved = Path(file_path).resolve()
+        resolved.relative_to(root / "exports")
+        relative = resolved.relative_to(root).as_posix()
+    except (ValueError, OSError):
+        return None
+    return f"/app_data/{quote(relative, safe='/')}"
 
 
 def _get_next_public_url() -> str:
@@ -72,4 +89,5 @@ async def export_presentation(
     return PresentationAndPath(
         presentation_id=presentation_id,
         path=export_result.path,
+        download_url=export_download_url(export_result.path),
     )

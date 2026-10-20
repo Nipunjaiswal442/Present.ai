@@ -1,8 +1,11 @@
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from utils.llm_calls.generate_presentation_structure import (
+    avoid_unsupported_chart_layouts,
     get_messages,
     get_messages_for_slides_markdown,
 )
+from models.presentation_outline_model import PresentationOutlineModel, SlideOutlineModel
+from models.presentation_structure_model import PresentationStructureModel
 
 
 def _layout() -> PresentationLayoutModel:
@@ -55,3 +58,14 @@ def test_slides_markdown_structure_prompt_includes_both_intent_sources():
 
     assert "# User Instructions:\nUse a bar chart" in prompt
     assert "# Original User Request:\nClimate presentation" in prompt
+
+
+def test_qualitative_outline_does_not_force_invented_chart_values():
+    layout = _layout()
+    layout.slides[1].json_schema = {"properties": {"chart": {"properties": {"chart_type": {"type": "string"}}}}}
+    outline = PresentationOutlineModel(slides=[
+        SlideOutlineModel(content="# Greener neighborhoods\n1. Plant trees\n2. Compost food\n3. Walk more"),
+        SlideOutlineModel(content="# Survey results\nRecycling: 45%, Composting: 25%"),
+    ])
+    result = avoid_unsupported_chart_layouts(PresentationStructureModel(slides=[1, 1]), outline, layout)
+    assert result.slides == [0, 1]

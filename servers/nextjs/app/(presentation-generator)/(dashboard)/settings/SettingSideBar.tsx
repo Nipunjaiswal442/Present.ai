@@ -11,7 +11,19 @@ const SettingSideBar = ({ selectedProvider, setSelectedProvider, presentonSelect
     const textProviderIcon = LLM_PROVIDERS[llm_config.LLM as keyof typeof LLM_PROVIDERS]?.icon
     const imageProviderIcon = IMAGE_PROVIDERS[llm_config.IMAGE_PROVIDER as keyof typeof IMAGE_PROVIDERS]?.icon || '/providers/pexel.png'
     return (
-        <div className='w-full max-w-[230px] h-screen px-3 pt-[22px] bg-[#F9FAFB] flex flex-col'>
+        <>
+        <div className="shrink-0 px-4 pt-4 md:hidden">
+            <label htmlFor="settings-section" className="mb-2 block text-xs font-medium">Settings section</label>
+            <select id="settings-section" value={selectedProvider} onChange={(event) => setSelectedProvider(event.target.value as SettingsSection)} className="h-12 w-full rounded-xl border border-black/10 bg-white px-3 text-base">
+                <option value="text-provider">Text provider</option>
+                {!presentonSelected && <option value="image-provider">Image provider</option>}
+                {!presentonSelected && <option value="web-search-provider">Web search</option>}
+                <option value="privacy">Usage analytics</option>
+                <option value="admin">Admin</option>
+                <option value="session">Sign out</option>
+            </select>
+        </div>
+        <div className='hidden w-full max-w-[230px] h-full shrink-0 px-3 pt-[22px] bg-[#F9FAFB] md:flex flex-col overflow-y-auto'>
             <p className='text-xs text-black  font-medium border-b mt-[3.15rem]  border-[#E1E1E5] pb-3.5'>FILTER BY:</p>
             <div className='mt-6 flex-1'>
                 <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Select Provider</p>
@@ -75,6 +87,7 @@ const SettingSideBar = ({ selectedProvider, setSelectedProvider, presentonSelect
                 </div>
             </div>
         </div>
+        </>
     )
 }
 

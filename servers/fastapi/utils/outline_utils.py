@@ -32,13 +32,20 @@ def get_presentation_title_from_presentation_outline(
             count=1,
         )
 
-    return (
-        first_content[:100]
+    # A deck title is its first heading/line, not the opening bullet list.
+    # Keep filenames and mobile headers readable and avoid cutting a word.
+    title = next((line.strip() for line in first_content.splitlines() if line.strip()), "")
+    title = (
+        title
         .replace("#", "")
         .replace("/", "")
         .replace("\\", "")
-        .replace("\n", " ")
+        .strip()
     )
+    if len(title) > 100:
+        shortened = title[:100]
+        title = shortened.rsplit(" ", 1)[0] if " " in shortened else shortened
+    return title or "Untitled Presentation"
 
 
 def _get_toc_count_for_total_slides(total_slides: int, title_slide: bool) -> int:

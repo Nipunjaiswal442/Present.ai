@@ -50,8 +50,16 @@ const DashboardSidebar = () => {
     const pathname = usePathname();
 
     return (
+        <>
+        <nav aria-label="Mobile navigation" className="glass-strong fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1 border-t border-black/10 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] md:hidden">
+            <NavItem href="/dashboard" label="Home" icon={LayoutDashboard} active={pathname === "/dashboard"} />
+            <NavItem href="/upload" label="New" icon={Plus} />
+            <NavItem href="/templates" label="Templates" icon={LayoutTemplate} active={pathname?.startsWith("/templates")} />
+            <NavItem href="/community" label="Community" icon={UsersRound} active={pathname?.startsWith("/community")} />
+            <NavItem href="/settings" label="Settings" icon={Settings} active={pathname?.startsWith("/settings")} />
+        </nav>
         <aside
-            className="glass sticky top-0 z-40 m-3 mr-0 flex h-[calc(100dvh-1.5rem)] w-[96px] shrink-0 flex-col justify-between rounded-[28px] px-3 py-5"
+            className="glass sticky top-0 z-40 m-3 mr-0 hidden h-[calc(100dvh-1.5rem)] w-[96px] shrink-0 flex-col justify-between rounded-[28px] px-3 py-5 md:flex"
             aria-label="Dashboard sidebar"
         >
             <div className="flex flex-col items-center gap-4">
@@ -84,6 +92,7 @@ const DashboardSidebar = () => {
                 <NavItem href="https://docs.presenton.ai/help" label="Help" icon={HelpCircle} external />
             </div>
         </aside>
+        </>
     );
 };
 

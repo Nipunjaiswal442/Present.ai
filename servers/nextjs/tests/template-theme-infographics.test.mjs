@@ -63,6 +63,14 @@ const theme = {
   graph_9: "#fff6f2",
 };
 
+test("legacy template font paths resolve to an available font stylesheet", () => {
+  const normalized = themedInserts.normalizeTemplateTheme({
+    ...theme,
+    fonts: { textFont: { name: "Playfair Display", url: "/vendor/fonts/serif/playfairdisplay/PlayfairDisplay[wght].ttf" } },
+  });
+  assert.equal(normalized.fonts.textFont.url, "https://fonts.googleapis.com/css2?family=Playfair%20Display:wght@400;700&display=swap");
+});
+
 test("applies semantic template roles to structural infographics", () => {
   const [element] = themedInserts.createInfographicInsertElements(
     "timeline",

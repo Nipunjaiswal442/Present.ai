@@ -35,6 +35,12 @@ You need to generate structured content json based on the schema.
   language request unless Slide Language says auto-detect.
 - Speaker notes must be plain text (no markdown).
 - Never exceed max character limits; do not clip mid-sentence to fit—rephrase instead.
+- Plan short titles before writing: use 2–5 complete words, without forced line
+  breaks. Prefer "Greener Neighborhoods" to an unfinished long heading.
+- Keep body text well below the maximum length. Use complete, concise sentences
+  instead of filling every available character or ending a field mid-word.
+- Preserve supplied numerical values exactly. Never invent percentages, chart
+  values, statistics, or trends to fill a template.
 - Do not use emojis or $schema fields.
 - Follow the intended outcome of user instructions when they do not conflict with Slide
   Language; do not generalize or expand their scope.

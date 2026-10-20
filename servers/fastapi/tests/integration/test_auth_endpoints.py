@@ -231,3 +231,36 @@ def test_admin_provider_settings_include_safe_global_presenton_status(
     assert "PRESENTON_ACCESS_TOKEN" not in response.json()
     assert "PRESENTON_REFRESH_TOKEN" not in response.json()
     asyncio.run(engine.dispose())
+
+
+def test_runtime_settings_work_for_regular_users_without_exposing_keys(monkeypatch, tmp_path):
+    monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "settings.json"))
+    monkeypatch.delenv("DISABLE_AUTH", raising=False)
+    monkeypatch.delenv("CAN_CHANGE_KEYS", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("OPENAI_MODEL", "")
+    monkeypatch.setenv("LLM", "")
+    monkeypatch.setenv("DISABLE_IMAGE_GENERATION", "false")
+    monkeypatch.setenv("LLM_MAX_OUTPUT_TOKENS", "")
+    client, engine = _build_client(tmp_path)
+    assert client.get("/api/v1/auth/runtime-config").status_code == 401
+    client.post("/api/v1/auth/setup", json={"username": "admin", "password": "secret123"})
+    client.post("/api/v1/auth/login", json={"username": "admin", "password": "secret123"})
+    saved = client.put("/api/v1/admin/provider-settings", json={
+        "LLM": "openai", "OPENAI_API_KEY": "  test-key\n", "OPENAI_MODEL": "test-model",
+        "DISABLE_IMAGE_GENERATION": True, "LLM_MAX_OUTPUT_TOKENS": 4096,
+    })
+    assert saved.status_code == 200
+    assert saved.json()["OPENAI_API_KEY"] == "test-key"
+    client.post("/api/v1/admin/users", json={"username": "member", "password": "member123"})
+    client.post("/api/v1/auth/logout")
+    client.post("/api/v1/auth/login", json={"username": "member", "password": "member123"})
+    result = client.get("/api/v1/auth/runtime-config")
+    assert result.status_code == 200
+    assert result.headers["cache-control"] == "no-store"
+    assert result.json()["canChange"] is False
+    assert result.json()["config"]["OPENAI_API_KEY"] == "__configured__"
+    assert result.json()["config"]["LLM_MAX_OUTPUT_TOKENS"] == 4096
+    assert "test-key" not in result.text
+    assert client.get("/api/v1/admin/provider-settings").status_code == 403
+    asyncio.run(engine.dispose())

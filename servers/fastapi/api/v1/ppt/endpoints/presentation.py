@@ -70,6 +70,7 @@ from models.sql.template_v2 import TemplateV2
 from models.sql.async_task import AsyncTaskModel
 from utils.asset_directory_utils import get_images_directory
 from utils.llm_calls.generate_presentation_structure import (
+    avoid_unsupported_chart_layouts,
     generate_presentation_structure,
 )
 from utils.llm_calls.generate_slide_content import (
@@ -1719,6 +1720,11 @@ async def prepare_presentation(
         outline_count=total_outlines,
         layout_count=total_slide_layouts,
     )
+    # Missing/out-of-range indexes receive fallback layouts above. Validate
+    # those choices too, so a random fallback cannot add an empty chart.
+    presentation_structure = avoid_unsupported_chart_layouts(
+        presentation_structure, presentation_outline_model, structure_layout
+    )
 
     if presentation.include_table_of_contents:
         n_toc_slides = get_no_of_toc_required_for_n_outlines(
@@ -2148,6 +2154,7 @@ async def stream_presentation(
         outline_count=len(outline.slides),
         layout_count=len(layout.slides),
     )
+    structure = avoid_unsupported_chart_layouts(structure, outline, layout)
     if structure.slides != original_structure:
         logger.warning(
             "Repairing invalid prepared presentation structure: "

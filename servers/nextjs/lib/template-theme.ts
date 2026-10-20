@@ -70,7 +70,12 @@ function normalizedHex(value: unknown): string | null {
 function normalizeTextFont(value: unknown): TemplateThemeTextFont | null {
   const font = asRecord(value);
   const name = nonEmptyString(font?.name);
-  const url = nonEmptyString(font?.url);
+  let url = nonEmptyString(font?.url);
+  // Older bundled templates reference font files no longer shipped by the UI.
+  // Resolve them through the same Google Fonts source used by the editor.
+  if (name && url.startsWith("/vendor/fonts/")) {
+    url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;700&display=swap`;
+  }
   return name && url ? { name, url } : null;
 }
 

@@ -69,11 +69,17 @@ export const usePresentationNavigation = (
     if (!document.fullscreenElement) {
       const fullscreenTarget =
         target ?? document.getElementById("presentation-mode-wrapper") ?? document.documentElement;
+      // iPhone Safari may not expose fullscreen for arbitrary HTML elements.
+      // Presentation mode still fills the available viewport without it.
+      if (typeof fullscreenTarget.requestFullscreen !== "function") {
+        setIsFullscreen(false);
+        return;
+      }
       fullscreenTarget
         .requestFullscreen()
         .then(() => setIsFullscreen(true))
         .catch(() => setIsFullscreen(false));
-    } else {
+    } else if (typeof document.exitFullscreen === "function") {
       document
         .exitFullscreen()
         .then(() => setIsFullscreen(false))
@@ -82,7 +88,7 @@ export const usePresentationNavigation = (
   }, [setIsFullscreen]);
 
   const handlePresentExit = useCallback(() => {
-    if (document.fullscreenElement) {
+    if (document.fullscreenElement && typeof document.exitFullscreen === "function") {
       document.exitFullscreen().catch(() => undefined);
     }
     setIsFullscreen(false);

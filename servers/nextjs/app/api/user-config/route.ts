@@ -27,12 +27,14 @@ async function forwardProviderSettings(
       },
       body,
       cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     }
   );
   const payload = await response.text();
   return new NextResponse(payload || null, {
     status: response.status,
     headers: {
+      "Cache-Control": "no-store",
       "content-type":
         response.headers.get("content-type") || "application/json",
     },

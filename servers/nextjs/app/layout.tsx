@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { PwaProvider } from "@/components/pwa/PwaProvider";
 import localFont from "next/font/local";
 import { Manrope, Syne, Unbounded } from "next/font/google";
 import "./globals.css";
@@ -41,6 +42,9 @@ const unbounded = Unbounded({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Present.ai",
+  appleWebApp: { capable: true, title: "Present.ai", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   metadataBase: new URL("https://present-ai.vercel.app"),
   title: "Present.ai — Open source AI presentation generator",
   description:
@@ -77,6 +81,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f5f5f7",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -92,7 +103,7 @@ export default function RootLayout({
         <Providers>
           <MixpanelInitializer>
 
-            {children}
+            <PwaProvider>{children}</PwaProvider>
 
           </MixpanelInitializer>
         </Providers>

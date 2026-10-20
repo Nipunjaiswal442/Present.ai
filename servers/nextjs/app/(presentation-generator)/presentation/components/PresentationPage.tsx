@@ -22,6 +22,7 @@ import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import {
   AlertCircle,
   ChevronRight,
+  ChevronLeft,
   Keyboard,
   Sparkles,
   X,
@@ -863,6 +864,19 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           currentSlide={selectedSlide}
           generationMode={isSmartPresentation ? "smart" : "standard"}
         />
+        {slidesLength > 0 && !isStreaming && (
+          <nav aria-label="Slide navigation" className="flex shrink-0 items-center justify-between gap-3 border-t border-black/5 bg-white px-4 py-1 md:hidden">
+            <button aria-label="Previous slide" className="grid h-11 w-11 place-items-center rounded-xl disabled:opacity-30" disabled={selectedSlide <= 0} onClick={() => handleEditorSlideNavigation(selectedSlide - 1)}>
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <select aria-label="Current slide" className="min-h-11 min-w-0 rounded-xl bg-transparent px-2 text-center text-sm" value={Math.min(selectedSlide, slidesLength - 1)} onChange={(event) => handleEditorSlideNavigation(Number(event.target.value))}>
+                  {presentationData?.slides.map((slide: { id?: string }, index: number) => <option key={slide.id || index} value={index}>Slide {index + 1} of {slidesLength}</option>)}
+            </select>
+            <button aria-label="Next slide" className="grid h-11 w-11 place-items-center rounded-xl disabled:opacity-30" disabled={selectedSlide >= slidesLength - 1} onClick={() => handleEditorSlideNavigation(selectedSlide + 1)}>
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </nav>
+        )}
         <div className="flex flex-1 min-h-0 gap-3 overflow-hidden xl:gap-5 2xl:gap-6">
           <div className="sticky top-0 hidden h-full w-[165px] shrink-0 self-start md:block">
             <SidePanel

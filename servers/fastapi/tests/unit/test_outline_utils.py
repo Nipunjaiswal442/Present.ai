@@ -19,7 +19,17 @@ def test_get_presentation_title_handles_prefixed_page_heading():
     )
 
     title = get_presentation_title_from_presentation_outline(outline)
-    assert title == "GrowthPlanRoadmap Body"
+    assert title == "GrowthPlanRoadmap"
+
+
+def test_deck_title_does_not_include_outline_bullets():
+    from utils.ppt_utils import get_presentation_title_from_outlines
+
+    outline = PresentationOutlineModel(slides=[SlideOutlineModel(
+        content="# Greener Neighborhoods\n- Plant native trees\n- Start composting"
+    )])
+    assert get_presentation_title_from_presentation_outline(outline) == "Greener Neighborhoods"
+    assert get_presentation_title_from_outlines(outline) == "Greener Neighborhoods"
 
 
 def test_get_presentation_title_for_empty_outline():

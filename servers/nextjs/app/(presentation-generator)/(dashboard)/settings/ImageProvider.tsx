@@ -115,7 +115,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
 
 
     return (
-        <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
+        <div className="space-y-6 bg-[#F9F8F8] p-3 sm:p-7 rounded-[12px] ">
             {/* API Key Input */}
             <div className="mb-4  bg-white p-10 pt-5 rounded-[12px]">
                 <ToolTip content="Enable/Disable Image Generation" className='flex justify-end items-center'>
@@ -164,7 +164,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                         variant="outline"
                                                         role="combobox"
                                                         aria-expanded={openImageProviderSelect}
-                                                        className="w-[222px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900 transition-colors hover:border-gray-400 justify-between"
+                                                        className="w-full max-w-[222px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900 transition-colors hover:border-gray-400 justify-between"
                                                     >
                                                         <div className="flex gap-3 items-center">
                                                             <span className="text-sm font-medium text-gray-900">

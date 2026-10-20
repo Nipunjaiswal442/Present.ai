@@ -107,7 +107,7 @@ const WebSearchProvider = ({
             </p>
           </div>
           {isWebSearchEnabled && <div className="w-full max-w-[720px] space-y-4">
-                <div className="ml-auto w-[222px]">
+                <div className="ml-auto w-full max-w-[222px]">
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     Provider
                   </label>
@@ -118,7 +118,7 @@ const WebSearchProvider = ({
                           variant="outline"
                           role="combobox"
                           aria-expanded={openProviderSelect}
-                          className="h-12 w-[222px] justify-between rounded-lg border border-gray-300 px-4 py-4 outline-none transition-colors hover:border-gray-400 focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                          className="h-12 w-full max-w-[222px] justify-between rounded-lg border border-gray-300 px-4 py-4 outline-none transition-colors hover:border-gray-400 focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
                         >
                           <span className="truncate text-sm font-medium text-gray-900">
                             {selected

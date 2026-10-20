@@ -106,12 +106,6 @@ const PresentonMode = ({
         setOpenProviderSelect(false);
         setAvailableModels([]);
         setModelsChecked(false);
-        if (currentModelField) {
-            setLlmConfig(prev => ({
-                ...prev,
-                [currentModelField]: ''
-            }));
-        }
     };
 
     const currentModelField = useMemo(() => {
@@ -1154,15 +1148,15 @@ const PresentonMode = ({
                     className="w-full"
                 >
                     <TabsList className="grid h-14 w-full grid-cols-3 rounded-[10px] border border-[#EDEEEF] bg-[#F6F6F9] p-1 shadow-inner shadow-black/[0.02]">
-                        <TabsTrigger value="chatgpt" className="h-12 gap-2 rounded-[8px] border border-transparent px-4 text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#E8E8ED] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
+                        <TabsTrigger value="chatgpt" className="h-12 min-w-0 gap-1 rounded-[8px] border border-transparent px-1 text-xs sm:gap-2 sm:px-4 sm:text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#E8E8ED] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
                             <Image src="/providers/openai.png" alt="" width={16} height={16} className="object-contain" />
                             ChatGPT
                         </TabsTrigger>
-                        <TabsTrigger value="local" className="h-12 gap-2 rounded-[8px] border border-transparent px-4 text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#E8E8ED] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
+                        <TabsTrigger value="local" className="h-12 min-w-0 gap-1 rounded-[8px] border border-transparent px-1 text-xs sm:gap-2 sm:px-4 sm:text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#E8E8ED] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
                             <Laptop className="h-4 w-4" />
                             Local
                         </TabsTrigger>
-                        <TabsTrigger value="other" className="h-12 gap-2 rounded-[8px] border border-transparent px-4 text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#E8E8ED] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
+                        <TabsTrigger value="other" className="h-12 min-w-0 gap-1 rounded-[8px] border border-transparent px-1 text-xs sm:gap-2 sm:px-4 sm:text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#E8E8ED] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
                             <Blocks className="h-4 w-4" />
                             AI Providers
                         </TabsTrigger>
@@ -1587,6 +1581,7 @@ const PresentonMode = ({
                 <ToolTip content="Enable/Disable Image Generation" className='flex justify-end items-center absolute top-3 right-3'>
                     <div className='flex justify-end items-center'>
                         <Switch
+                            aria-label="Enable image generation"
                             checked={!llmConfig.DISABLE_IMAGE_GENERATION}
                             className='data-[state=checked]:bg-[#4791FF] h-[22px] w-[36px] data-[state=unchecked]:bg-[#E2E0E1]'
                             onCheckedChange={(checked) => {
@@ -1675,6 +1670,7 @@ const PresentonMode = ({
                     <ToolTip content="Enable/Disable Web Search" className='absolute right-3 top-3 flex items-center justify-end'>
                         <div className='flex items-center justify-end'>
                             <Switch
+                                aria-label="Enable web search"
                                 checked={!!llmConfig.WEB_GROUNDING}
                                 className='data-[state=checked]:bg-[#4791FF] h-[22px] w-[36px] data-[state=unchecked]:bg-[#E2E0E1]'
                                 onCheckedChange={(checked) => {
@@ -1750,7 +1746,7 @@ const PresentonMode = ({
                 </div>
             )}
 
-            <div className='fixed bottom-16 mr-8  max-w-[1440px]  right-16 flex justify-end items-center gap-2.5 '>
+            <div className='sticky bottom-0 mt-8 flex justify-end items-center gap-2.5 bg-white/95 py-4 pb-[max(16px,env(safe-area-inset-bottom))] backdrop-blur'>
                 {providerStep > 1 && (
                     <button
                         onClick={handleBack}

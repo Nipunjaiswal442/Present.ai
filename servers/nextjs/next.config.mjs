@@ -10,6 +10,18 @@ const nextConfig = {
   // only reads the default .next directory.
   distDir: process.env.VERCEL ? ".next" : ".next-build",
   output: "standalone",
+  // Generation and file rendering can exceed Next's 30-second proxy default.
+  experimental: { proxyTimeout: 300_000 },
+  async headers() {
+    return [{
+      source: "/sw.js",
+      headers: [
+        { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        { key: "Service-Worker-Allowed", value: "/" },
+      ],
+    }];
+  },
   turbopack: {
     root: nextjsRoot,
   },

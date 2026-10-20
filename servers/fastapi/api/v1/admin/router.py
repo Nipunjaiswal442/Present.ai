@@ -2,6 +2,7 @@ import uuid
 import os
 import shutil
 from typing import Any
+from pydantic import ValidationError
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from sqlalchemy import delete, func, select
@@ -21,7 +22,8 @@ from api.v1.auth.users import (
 from models.sql.user import User
 from models.sql.key_value import KeyValueSqlModel
 from services.database import get_async_session
-from services.provider_settings import get_provider_settings, save_provider_settings
+from services.provider_settings import get_provider_settings, get_effective_provider_settings, merge_provider_settings, save_provider_settings
+from models.user_config import UserConfig
 from services.presenton_cloud import get_presenton_provider, has_cloud_credentials
 from utils.get_env import (
     get_app_data_directory_env,
@@ -63,7 +65,7 @@ async def read_provider_settings(
     session: AsyncSession = Depends(get_async_session),
 ) -> dict[str, Any]:
     _ensure_settings_are_mutable()
-    settings = await get_provider_settings(session)
+    settings = await get_effective_provider_settings(session)
     provider = await get_presenton_provider(session, get_presenton_oauth_issuer())
     return {
         **settings,
@@ -79,8 +81,14 @@ async def update_provider_settings(
     session: AsyncSession = Depends(get_async_session),
 ) -> dict[str, Any]:
     _ensure_settings_are_mutable()
+    merged = merge_provider_settings(await get_provider_settings(session), config)
+    try:
+        UserConfig.model_validate(merged)
+    except ValidationError as error:
+        fields = ", ".join(".".join(map(str, item["loc"])) for item in error.errors())
+        raise HTTPException(status_code=422, detail=f"Invalid provider settings: {fields}") from None
     saved = await save_provider_settings(session, config)
-    update_env_with_user_config()
+    update_env_with_user_config(saved)
     return saved
 
 

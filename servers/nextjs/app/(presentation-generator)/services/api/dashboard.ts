@@ -78,6 +78,7 @@ export class DashboardApi {
           method: "GET",
           credentials: "include",
           cache: options?.cache,
+          signal: AbortSignal.timeout(20_000),
         }
       );
 

@@ -4,31 +4,13 @@ import re
 from typing import List
 
 from models.presentation_structure_model import PresentationStructureModel
+from utils.outline_utils import get_presentation_title_from_presentation_outline
 
 
 def get_presentation_title_from_outlines(
     presentation_outlines: PresentationOutlineModel,
 ) -> str:
-    if not presentation_outlines.slides:
-        return "Untitled Presentation"
-
-    first_content = presentation_outlines.slides[0].content or ""
-
-    if re.match(r"^\s*#{1,6}\s*Page\s+\d+\b", first_content):
-        first_content = re.sub(
-            r"^\s*#{1,6}\s*Page\s+\d+\b[\s,:\-]*",
-            "",
-            first_content,
-            count=1,
-        )
-
-    return (
-        first_content[:100]
-        .replace("#", "")
-        .replace("/", "")
-        .replace("\\", "")
-        .replace("\n", " ")
-    )
+    return get_presentation_title_from_presentation_outline(presentation_outlines)
 
 
 def find_slide_layout_index_by_regex(

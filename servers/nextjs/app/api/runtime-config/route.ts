@@ -1,43 +1,34 @@
 import { NextResponse } from "next/server";
-import { authStatusForRequest } from "@/lib/server-auth-role";
-import { readUserConfigFile } from "@/lib/user-config-store";
+import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
 import { hasValidLLMConfig, normalizeLLMConfig } from "@/utils/storeHelpers";
-import { LLMConfig } from "@/types/llm_config";
 
 export const dynamic = "force-dynamic";
 
-const SECRET_FIELD = /(API_KEY|ACCESS_KEY|SECRET|TOKEN|PASSWORD)/i;
-
 export async function GET(request: Request) {
-  const auth = await authStatusForRequest(request);
-  if (!auth.authenticated) {
-    return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
-  }
-  const path = process.env.USER_CONFIG_PATH;
-  if (!path) {
-    return NextResponse.json(
-      { configured: false, config: {} },
-      { status: 200 }
-    );
-  }
   try {
-    const full = normalizeLLMConfig(
-      readUserConfigFile<LLMConfig>(path) || {}
-    );
-    const config = Object.fromEntries(
-      Object.entries(full).map(([key, value]) => [
-        key,
-        SECRET_FIELD.test(key) ? (value ? "__configured__" : "") : value,
-      ])
-    );
-    return NextResponse.json({
-      configured: hasValidLLMConfig(full),
-      config,
+    const response = await fetch(`${getFastApiBaseUrl()}/api/v1/auth/runtime-config`, {
+      headers: { cookie: request.headers.get("cookie") || "" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     });
+    if (!response.ok) {
+      return NextResponse.json(
+        { detail: response.status === 401 ? "Unauthorized" : "Unable to load provider settings" },
+        { status: response.status, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    const runtime = await response.json();
+    const config = normalizeLLMConfig(runtime.config || {});
+    return NextResponse.json({
+      config,
+      canChange: Boolean(runtime.canChange),
+      configured: hasValidLLMConfig(config) &&
+        (config.LLM !== "presenton" || config.PRESENTON_CONNECTED === true),
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json(
-      { configured: false, config: {} },
-      { status: 200 }
+      { detail: "Cannot reach the backend. Check the connection and try again." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

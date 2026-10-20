@@ -61,10 +61,10 @@ async def app_lifespan(_: FastAPI):
     await create_db_and_tables()
     await bootstrap_database_admin()
     async with async_session_maker() as session:
-        await migrate_provider_settings_from_file(session)
+        provider_settings = await migrate_provider_settings_from_file(session)
     await import_default_templates_on_startup()
     if get_can_change_keys_env() != "false":
-        update_env_with_user_config()
+        update_env_with_user_config(provider_settings)
     await check_llm_and_image_provider_api_or_model_availability()
     yield
     # Shutdown: release all database connections to prevent stale/leaked pools.

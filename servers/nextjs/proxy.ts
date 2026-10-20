@@ -69,6 +69,7 @@ async function getAuthStatus(request: NextRequest): Promise<AuthStatus> {
       method: "GET",
       headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
       cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) {
       return { configured: true, authenticated: false };

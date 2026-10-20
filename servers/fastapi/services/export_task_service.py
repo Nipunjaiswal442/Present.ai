@@ -178,7 +178,7 @@ class ExportTaskService:
         env["PUPPETEER_TMP_DIR"] = puppeteer_temp_directory
 
         puppeteer_cache_directory = env.get("PUPPETEER_CACHE_DIR") or os.path.join(
-            temp_directory, "puppeteer-cache"
+            app_data_directory, "cache", "puppeteer"
         )
         os.makedirs(puppeteer_cache_directory, exist_ok=True)
         env["PUPPETEER_CACHE_DIR"] = puppeteer_cache_directory

@@ -1,4 +1,5 @@
 import os
+import shutil
 from typing import Optional, Union
 
 from fastapi import HTTPException
@@ -168,11 +169,17 @@ class TempFileService:
 
     def _delete_dir_files(self, dir_path: str):
         dir_path = self.resolve_temp_path(dir_path, must_exist=True)
-        for root, dirs, files in os.walk(dir_path, topdown=False):
-            for name in files:
-                os.remove(os.path.join(root, name))
-            for name in dirs:
-                os.rmdir(os.path.join(root, name))
+        # Browser bundles contain directory symlinks (notably macOS frameworks).
+        # Remove links themselves; never follow them or call rmdir on a link.
+        with os.scandir(dir_path) as entries:
+            for entry in entries:
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        shutil.rmtree(entry.path)
+                    else:
+                        os.unlink(entry.path)
+                except FileNotFoundError:
+                    pass
 
     def cleanup_temp_dir(self, dir_path: str):
         try:

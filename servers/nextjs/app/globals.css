@@ -824,11 +824,14 @@ thead {
 }
 
 /* Liquid glass surfaces */
+:where(.glass, .glass-dark, .glass-strong, .glass-pill) {
+  position: relative;
+}
+
 .glass,
 .glass-dark,
 .glass-strong,
 .glass-pill {
-  position: relative;
   isolation: isolate;
   -webkit-backdrop-filter: blur(var(--pai-glass-blur)) saturate(170%);
   backdrop-filter: blur(var(--pai-glass-blur)) saturate(170%);
@@ -1148,3 +1151,19 @@ thead {
     transition: none;
   }
 }
+
+/* Phone-sized app surfaces: respect the notch, keyboard and touch targets. */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]), textarea, select {
+    font-size: 16px; /* Prevent Safari from zooming when a field receives focus. */
+  }
+  [role="dialog"] { max-width: calc(100vw - 2rem); }
+}
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }

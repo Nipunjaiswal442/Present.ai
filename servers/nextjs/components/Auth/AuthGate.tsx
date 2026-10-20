@@ -31,6 +31,7 @@ const initialStatus: AuthStatus = {
 export default function AuthGate() {
   const [status, setStatus] = useState<AuthStatus>(initialStatus);
   const [isLoading, setIsLoading] = useState(true);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMetSplashDuration, setHasMetSplashDuration] = useState(false);
@@ -110,12 +111,14 @@ export default function AuthGate() {
 
   const refreshStatus = async () => {
     setIsLoading(true);
+    setStatusError(null);
 
     try {
       const response = await fetch(getApiUrl("/api/v1/auth/status"), {
         method: "GET",
         cache: "no-store",
         credentials: "include",
+        signal: AbortSignal.timeout(15_000),
       });
 
       if (!response.ok) {
@@ -136,6 +139,7 @@ export default function AuthGate() {
         role: data.role ?? null,
       });
     } catch (fetchError) {
+      setStatusError("We could not reach the login service. Check your connection and try again.");
       console.error(fetchError);
       trackEvent(MixpanelEvent.Auth_Status_Checked, {
         configured: false,
@@ -178,6 +182,7 @@ export default function AuthGate() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (statusError) return;
 
     const cleanedUsername = username.trim();
     if (cleanedUsername.length < 3) {
@@ -233,6 +238,7 @@ export default function AuthGate() {
         {
           method: "POST",
           credentials: "include",
+          signal: AbortSignal.timeout(20_000),
           headers: {
             "Content-Type": "application/json",
           },
@@ -338,6 +344,19 @@ export default function AuthGate() {
     !hasMetSplashDuration
   ) {
     return <PresentonSplashLoader message="Preparing your workspace..." />;
+  }
+
+  if (statusError) {
+    return (
+      <main className="pai-canvas flex min-h-dvh items-center justify-center p-6">
+        <section role="alert" className="glass-strong w-full max-w-md rounded-[28px] p-7">
+          <Wordmark href="/" />
+          <h1 className="mt-7 text-2xl font-semibold">Unable to connect</h1>
+          <p className="my-5 text-sm leading-6 text-black/65">{statusError}</p>
+          <button className="pai-btn pai-btn-black" onClick={() => void refreshStatus()}>Try again</button>
+        </section>
+      </main>
+    );
   }
 
   return (

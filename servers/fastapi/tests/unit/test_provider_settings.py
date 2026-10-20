@@ -102,3 +102,51 @@ def test_startup_migrates_user_config_and_rewrites_compatibility_file(
         "AUTH_PASSWORD_HASH": "legacy-hash",
         "AUTH_SECRET_KEY": "jwt-secret",
     }
+
+
+def test_keys_are_trimmed_and_redacted_values_do_not_replace_saved_keys():
+    merged = merge_provider_settings(
+        {"OPENAI_API_KEY": "saved-key"},
+        {"OPENAI_API_KEY": "__configured__", "GOOGLE_API_KEY": "  pasted-key\n"},
+    )
+    assert merged["OPENAI_API_KEY"] == "saved-key"
+    assert merged["GOOGLE_API_KEY"] == "pasted-key"
+
+
+def test_database_settings_apply_without_a_shared_config_file(monkeypatch):
+    from utils.user_config import get_user_config, update_env_with_user_config
+    monkeypatch.delenv("USER_CONFIG_PATH", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "old-key")
+    monkeypatch.setenv("LLM", "openai")
+    monkeypatch.setenv("OPENAI_MODEL", "old-model")
+    update_env_with_user_config({"LLM": "openai", "OPENAI_API_KEY": "new-key", "OPENAI_MODEL": "new-model"})
+    config = get_user_config()
+    assert config.OPENAI_API_KEY == "new-key"
+    assert config.OPENAI_MODEL == "new-model"
+    update_env_with_user_config({"OPENAI_API_KEY": ""})
+    assert get_user_config().OPENAI_API_KEY is None
+
+
+def test_empty_first_run_file_preserves_environment_provider(monkeypatch, tmp_path):
+    from utils.user_config import get_user_config, update_env_with_user_config
+    monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "empty.json"))
+    monkeypatch.setenv("LLM", "openai")
+    monkeypatch.setenv("OPENAI_API_KEY", "environment-key")
+    update_env_with_user_config({})
+    assert get_user_config().LLM == "openai"
+    assert get_user_config().OPENAI_API_KEY == "environment-key"
+
+
+def test_runtime_redaction_preserves_numeric_token_limits():
+    from api.v1.auth.runtime_config import redact_provider_settings
+    config = redact_provider_settings({
+        "OPENAI_API_KEY": "secret", "CODEX_REFRESH_TOKEN": "secret-token",
+        "BEDROCK_AWS_SECRET_ACCESS_KEY": "secret", "LLM_MAX_OUTPUT_TOKENS": 4096,
+        "LLM_REASONING_BUDGET_TOKENS": 512, "DISABLE_IMAGE_GENERATION": True,
+    })
+    assert config["OPENAI_API_KEY"] == "__configured__"
+    assert config["CODEX_REFRESH_TOKEN"] == "__configured__"
+    assert config["BEDROCK_AWS_SECRET_ACCESS_KEY"] == "__configured__"
+    assert config["LLM_MAX_OUTPUT_TOKENS"] == 4096
+    assert config["LLM_REASONING_BUDGET_TOKENS"] == 512
+    assert config["DISABLE_IMAGE_GENERATION"] is True

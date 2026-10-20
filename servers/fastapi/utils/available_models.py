@@ -196,7 +196,7 @@ async def list_available_openai_compatible_models(url: str, api_key: str) -> lis
 async def list_available_anthropic_models(api_key: str) -> list[str]:
     async with aiohttp.ClientSession(
         headers={
-            "x-api-key": api_key,
+            "x-api-key": (api_key or "").strip(),
             "anthropic-version": "2023-06-01",
         }
     ) as session:
@@ -213,7 +213,7 @@ async def list_available_anthropic_models(api_key: str) -> list[str]:
 
 async def list_available_google_models(api_key: str) -> list[str]:
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=(api_key or "").strip())
         return [x.name for x in client.models.list(config={"page_size": 50}) if x.name]
     except GoogleAPIError as e:
         raise ModelAvailabilityError(

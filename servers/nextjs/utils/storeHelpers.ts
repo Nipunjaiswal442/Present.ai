@@ -2,8 +2,10 @@ import { setLLMConfig } from "@/store/slices/userConfig";
 import { store } from "@/store/store";
 import { LLMConfig } from "@/types/llm_config";
 import { isSupportedCodexModel } from "@/utils/codexModels";
+import { getApiErrorMessage } from "@/utils/api";
 
 function isProvided(value: unknown): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
   return value !== "" && value !== null && value !== undefined;
 }
 
@@ -27,6 +29,11 @@ function parseOptionalBool(value: unknown): boolean | undefined {
 
 export const normalizeLLMConfig = (llmConfig: LLMConfig): LLMConfig => {
   const normalizedConfig: LLMConfig = { ...llmConfig };
+  for (const [key, value] of Object.entries(normalizedConfig)) {
+    if (typeof value === "string") {
+      (normalizedConfig as Record<string, unknown>)[key] = value.trim();
+    }
+  }
 
   const parsedDisableImageGeneration = parseOptionalBool(
     (normalizedConfig as Record<string, unknown>).DISABLE_IMAGE_GENERATION
@@ -403,10 +410,12 @@ export const handleSaveLLMConfig = async (llmConfig: LLMConfig) => {
 
   const response = await fetch("/api/user-config", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(normalizedConfig),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!response.ok) {
-    throw new Error(`Unable to save user configuration (${response.status})`);
+    throw new Error(await getApiErrorMessage(response, "Unable to save provider settings. Please try again."));
   }
 
   store.dispatch(setLLMConfig(normalizedConfig));
